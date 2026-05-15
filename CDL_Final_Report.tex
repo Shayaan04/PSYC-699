@@ -1,0 +1,547 @@
+%=============================================================================
+% Community Data Lab: Final Technical Report (LaTeX)
+% Protection for Sale in High-Income Countries
+%
+% Structure matches the course Tech Report Template: Summary, Introduction,
+% Preparation, Analysis, Results, Recommendations, Conclusion; then
+% Appendices and References (single-spaced) last. Compile: pdflatex (twice for TOC).
+% Figures: fig1..fig7 from analysis.py; global WITS composite as
+% fig_ntm_global_trends.png
+%=============================================================================
+\documentclass[12pt,letterpaper]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{setspace}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage{microtype}
+
+\usepackage{amsmath}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{xurl}
+\usepackage[hidelinks]{hyperref}
+\usepackage{natbib}
+\usepackage{titlesec}
+\usepackage{indentfirst}
+
+% Numbered sections and subsections in body and appendices (e.g.\ 1., 1.1, A.)
+\setcounter{secnumdepth}{3}
+\setcounter{tocdepth}{3}
+
+% Table note: single-spaced, left-aligned (not centered) below table body
+\newenvironment{tablenotes}{%
+  \par\vspace{0.35em}%
+  \begingroup
+  \raggedright
+  \footnotesize
+  \begin{singlespace}%
+}{%
+  \end{singlespace}%
+  \endgroup
+  \par
+}
+
+\setlength{\emergencystretch}{2.5em}
+\urlstyle{same}
+
+\titleformat{\section}{\normalfont\large\bfseries}{\thesection.}{0.5em}{}
+\titleformat{\subsection}{\normalfont\normalsize\bfseries}{\thesubsection}{0.5em}{}
+\titleformat{\subsubsection}{\normalfont\normalsize\itshape}{\thesubsubsection}{0.5em}{}
+
+\graphicspath{{figures/}{./}}
+
+\newcommand{\Nfull}{337{,}542}
+\newcommand{\Nreg}{123{,}508}
+\newcommand{\Nhi}{30{,}270}
+\newcommand{\CountriesFull}{73}
+\newcommand{\CountriesReg}{48}
+\newcommand{\CountriesHi}{12}
+\newcommand{\Industries}{137}
+\newcommand{\Years}{34}
+
+% Abstract (author text; not centered)
+\newcommand{\abstracttext}{%
+This report investigates whether trade association density, a measure of organized industry lobbying capacity, is associated with higher levels of non-tariff measure (NTM) use in high-income countries. Non-tariff measures are trade policy instruments other than tariffs, including sanitary standards, technical regulations, and licensing requirements. While tariffs have declined under World Trade Organization commitments, NTMs have surged globally since 2000, raising the question of whether governments are substituting NTMs for tariffs in response to industry lobbying. Grounded in the Grossman and Helpman (1994) Protection for Sale framework, this project integrates three datasets including NTM records from the World Integrated Trade Solution (WITS), trade association data digitized by the Kansas Data Science Consortium, and industry-level controls from the UNIDO INDSTAT database into a country, year, and industry panel covering 73 countries, 137 industries, and 34 years. Using pooled OLS, random effects GLS, and two-way fixed effects regression models with log-transformed variables, the analysis finds a consistent, statistically significant positive relationship between trade association density and NTM intensity across all specifications. The main two-way fixed effects estimate indicates that a one percent increase in trade association density is associated with a 0.168 percent increase in new NTMs ($p < 0.001$), with the effect holding robustly across all World Bank income groups. These findings support the Protection for Sale hypothesis and have direct implications for the World Bank's trade policy mission.%
+}
+
+\begin{document}
+
+% Title page
+\begin{titlepage}
+\centering
+\vspace*{0.22in}
+
+{\large Community Data Lab Project Report\par}
+\vspace{0.3in}
+
+{\Large\bfseries Protection for Sale in High-Income Countries:\par}
+{\Large\bfseries Trade Association Density and Non-Tariff Measure Proliferation\par}
+
+\vspace{0.32in}
+
+{\large Shayaan Mohammed, University of Kansas\par}
+{\large William Duncan, University of Kansas\par}
+{\large Wisarut Suwanprasert \& Adeel Malik, World Bank\par}
+
+\vspace{0.35in}
+
+{\large May 2026\par}
+
+\vspace{0.28in}
+\begin{minipage}[t]{\linewidth}
+\singlespacing
+\setlength{\parskip}{0pt}
+\setlength{\parindent}{15pt}
+
+\begin{center}
+{\large\bfseries Abstract}
+\end{center}
+
+\vspace{0.4em}
+\abstracttext
+\end{minipage}
+
+\vfill
+\end{titlepage}
+
+\clearpage
+\pagenumbering{roman}
+\setcounter{page}{2}
+\tableofcontents
+\newpage
+\pagenumbering{arabic}
+\setcounter{page}{1}
+\doublespacing
+\setlength{\parindent}{15pt}
+\setlength{\parskip}{0pt}
+
+%=============================================================================
+\section{Summary}
+%=============================================================================
+
+This Community Data Lab technical report responds to World Bank trade policy interests (via the Kansas Data Science Consortium) by asking whether trade association density (a proxy for organized industry capacity) is associated with newly introduced non-tariff measures (NTMs) in global panel data. NTMs include sanitary and technical regulations, licensing, and related instruments recorded in the World Integrated Trade Solution (WITS) alongside tariffs. The project merges WITS notifications, KDSC digitized association counts from the \textit{World Guide to Trade Associations}, and UNIDO INDSTAT-based synthetic industry controls into a country, year, and industry panel (73 countries, 137 industries, 34 years in the filtered extract).
+
+Regressions use $\ln(1+x)$ transforms, country-clustered standard errors, and, for the preferred estimates, two-way fixed effects where applicable. On the high-income subsample ($N=30{,}270$), pooled OLS, random effects GLS, and two-way fixed effects all yield a positive, statistically significant partial association between association density and new NTM intensity; the main two-way FE elasticity is approximately $0.168$ ($p<0.001$). The same sign appears in separate two-way FE models for each World Bank income group. These patterns are consistent with the Protection for Sale framework \citep{grossmanHelpman1994} but do not establish causation: association counts are cross-sectional in this design, and confounding by industrial structure, regulatory capacity, and reporting rules remains important.
+
+%=============================================================================
+\section{Introduction}
+%=============================================================================
+
+\subsection{Background and motivation}
+
+Why do governments restrict trade even in an era of globalization and preferential trade agreements? While tariffs have declined over recent decades under successive rounds of multilateral negotiations, trade protection has not disappeared. Instead, much of the policy action has shifted toward non-tariff measures, which include regulatory standards, technical barriers, licensing requirements, sanitary restrictions, and other instruments recorded in integrated trade policy databases alongside tariffs. According to the World Integrated Trade Solution (WITS) database maintained by the World Bank and UNCTAD, the global stock of NTM records has grown to more than 44 million entries by 2024, an increase that far exceeds the pace of global trade growth alone \citep{wits2024}.
+
+This surge raises a central question in political economy: what factors are associated with the cross-country and cross-industry pattern of NTM use? One influential answer comes from the Protection for Sale framework developed by \citet{grossmanHelpman1994}. The framework proposes that organized industries (those with active trade associations and related collective capacity) can influence governments to provide trade protection in exchange for political support. As tariffs have come under tighter international disciplines in many countries, NTMs have become a salient remaining margin through which industries may seek protection-like outcomes through regulation and administrative measures.
+
+This project, sponsored by the World Bank through the Kansas Data Science Consortium Community Data Lab, asks whether industries with higher trade association density experience higher levels of new NTM use, with particular attention to high-income countries where trade association networks are often well developed and where regulatory capacity can support complex NTM instruments.
+
+\subsection{Global patterns in WITS NTM activity}
+
+Figure~\ref{fig:global_ntm} summarizes worldwide notification activity in the WITS NTM archive for 1991 to 2024. The left panel counts \emph{new} NTMs introduced each year (aggregated globally). The series is volatile in the 1990s and 2000s, rises through the 2010s, and shows very large spikes in the mid-2010s before falling back toward low levels in the most recent years. The right panel plots the implied \emph{cumulative} stock of NTMs over the same period: slow accumulation through the 2000s, a steep increase when the mid-decade spikes arrive, and a plateau thereafter. Together, the panels illustrate why the empirical work emphasizes flexible functional forms (log transforms) and year fixed effects: both the level and the volatility of recorded NTM activity shift over time, and tail years may also reflect reporting and database coverage in addition to true policy incidence.
+
+\begin{figure}[htbp]
+  \centering
+  \IfFileExists{fig_ntm_global_trends.png}{%
+    \includegraphics[width=\linewidth]{fig_ntm_global_trends.png}}{%
+    \IfFileExists{figures/fig_ntm_global_trends.png}{%
+      \includegraphics[width=\linewidth]{figures/fig_ntm_global_trends.png}}{%
+      \fbox{\begin{minipage}[c][2.4in][c]{0.96\linewidth}\centering\vfill
+      \textit{Missing image file. Save your composite figure as}\\[0.35em]
+      \texttt{fig\_ntm\_global\_trends.png}\\[0.25em]
+      \textit{in the same folder as this \texttt{.tex} file, or under \texttt{figures/}.}\vfill
+      \end{minipage}}}}%
+  \caption{Non-tariff measures over time (1991 to 2024). \emph{Left:} new NTMs introduced per year (global total). \emph{Right:} cumulative NTMs (global stock). Source: WITS NTM database.}
+  \label{fig:global_ntm}
+\end{figure}
+
+\subsection{Research question}
+
+The central research question is:
+
+\begin{quote}
+\textit{Do industries with greater trade association density experience higher levels of non-tariff trade protection in high-income countries?}
+\end{quote}
+
+This question is motivated by the observation that high-income countries combine substantial organizational infrastructure at the industry level with the administrative capacity to implement detailed product-level measures.
+
+\subsection{Theoretical framework}
+
+The analytical framework follows the Protection for Sale model of \citet{grossmanHelpman1994}. In that setting, policy outcomes reflect a political economy tradeoff between organized interests and broader welfare considerations. Industries that are politically organized (here proxied by the density of trade associations at the country-industry level) may be better positioned to influence the incidence of regulatory trade measures. \citet{mitraEtAl2002} provide an empirical application of related ideas in a developing country setting, emphasizing that institutional context can shape how protection is allocated.
+
+This project implements a global multi-country panel and uses trade association counts per country-industry as a proxy for organization. The maintained hypothesis is that industries with denser association networks exhibit higher new NTM counts, conditional on industry size proxies and, in the preferred specifications, country and year fixed effects.
+
+%=============================================================================
+\section{Preparation}
+%=============================================================================
+
+\subsection{NTM data: World Integrated Trade Solution}
+
+The primary outcome variable is drawn from the World Integrated Trade Solution (WITS) database \citep{wits2024}, a joint initiative of the World Bank and UNCTAD. The database tracks non-tariff measures applied by countries at the Harmonized System (HS) product level. The WITS NTM archive contains more than 44 million records spanning 1991 to 2024. Each record identifies the reporting country, the HS product code affected, the NTM category, and timing information used to construct annual counts.
+
+NTMs in WITS are classified into multiple categories. Import-related measures include sanitary and phytosanitary measures (Type~A), technical barriers to trade (Type~B), pre-shipment inspection (Type~C), contingent trade-protective measures (Type~D), non-automatic licensing and quotas (Type~E), price-control measures (Type~F), finance measures (Type~G), competition-related measures (Type~H), investment measures (Type~I), distribution restrictions (Type~J), subsidies (Type~L), government procurement (Type~M), and intellectual property measures (Type~N). Export-related measures appear under Type~P.
+
+A central construction challenge is that WITS NTMs are recorded at the HS level while trade association and industry control series are organized using ISIC industry codes. Official WITS concordance tables map HS codes to ISIC Revision~4. Records are collapsed to a country, year, and industry panel. The key outcome used in the regressions is \texttt{new\_ntm\_count}: the number of new NTMs introduced in a given country, industry, and year.
+
+\subsection{Trade association data: World Guide to Trade Associations}
+
+The primary explanatory variable is drawn from the \textit{World Guide to Trade Associations} \citep{zils1999}, compiled by Michael Zils and published by K.\,G.~Saur (1999), digitized by the Kansas Data Science Consortium. The publication contains records for 23,641 trade associations operating across 185 countries and 390 areas of economic specialization. The merged panel uses counts of trade associations per country and industry as a proxy for organizational density relevant to political economy mechanisms.
+
+An important limitation is that the source is cross-sectional rather than longitudinal: the inventory reflects a single publication period and does not track formation or dissolution over subsequent years. In the panel regressions, the same association count is carried across all years for a given country-industry pair. The design therefore emphasizes cross-sectional differences across industries within a country and year (in models with two-way fixed effects), rather than dynamic changes in association density.
+
+\subsection{Industry controls: UNIDO INDSTAT}
+
+Industry-level economic controls are drawn from the UNIDO Industrial Statistics (INDSTAT) database. INDSTAT provides annual information on employment, establishments, output, value added, wages and salaries, and related series at the country-industry level. These variables help separate association density from sheer industry scale.
+
+Raw INDSTAT coverage is sparse in the merged panel \citep{unido2024}. The analysis therefore uses synthetic (imputed) versions of employment, value added, wages, output, and establishments (\texttt{emp\_synth}, \texttt{va\_synth}, \texttt{wages\_synth}, \texttt{output\_synth}, \texttt{estab\_synth}). Synthetic controls raise usable coverage to roughly 36\% of the filtered panel and define the regression sample used throughout the paper.
+
+\subsection{Why log transformations are used}
+
+All continuous variables in the regression models are transformed using $\ln(1+x)$ (\texttt{log1p} in code). This choice reflects three practical realities of the data.
+
+First, both new NTM counts and trade association counts are highly right-skewed. Most country-industry-year cells are zero or small, while a long tail contains extremely large counts. A linear model in levels would place disproportionate weight on outliers. The logarithmic transformation compresses skewness and stabilizes the relationship for ordinary least squares.
+
+Second, many observations have exact zeros. The transformation $\ln(x)$ is undefined at $x=0$, which would force dropping zeros or using ad hoc rules. The $\ln(1+x)$ transformation maps zero to zero and preserves zeros without discarding observations.
+
+Third, when the outcome and the key regressor are both transformed with $\ln(1+\cdot)$, the coefficient on association density has an elasticity-style interpretation for small proportional changes away from zero: a one percent increase in the association side is associated with roughly $\hat\beta$ percent change on the new-NTM side, holding controls and fixed effects as specified. The synthetic industry controls enter in the same $\ln(1+\cdot)$ form for comparability.
+
+\subsection{Final panel structure, merge logic, and supplementary fields}
+
+The final analysis dataset is a country, year, and industry panel in ISIC Revision~4. Constructing it required reconciling three sources that do not arrive in a single native key: WITS NTMs are recorded at the HS product level with HS nomenclature vintages that differ across countries and years; the digitized trade association inventory is keyed to country and industry concepts aligned to ISIC; and UNIDO INDSTAT synthetic controls are reported at the country, industry, and year level in ISIC space.
+
+The merge therefore proceeded in stages. First, raw WITS NTM records were aggregated to the country, year, and HS level (and related intermediate steps consistent with the upstream extract), then each HS series was mapped to ISIC Revision~4 using official WITS concordance tables. Because concordance weights and applicable HS revisions can differ by reporter, the HS-to-ISIC crosswalk was applied \emph{separately for each country}: for every country, HS codes were translated to ISIC Rev.~4 with that country's relevant nomenclature version, and the mapped measures were re-aggregated to country, year, and industry cells. This country-by-country crosswalk avoids imposing a single HS vintage where it would mis-classify another reporter's codes.
+
+Second, the industry-level association counts from the World Guide were joined on the country-industry identifiers produced by that harmonization (with the cross-sectional association field carried across years as described above). Third, synthetic INDSTAT controls were merged on country, industry, and year. Finally, supplementary policy and classification fields were appended: World Bank income groups by country and year \citep{wb2024} and Polity5 regime scores \citep{marshall2019} for descriptive governance context.
+
+After restricting to observations from 1991 onward and excluding the European Union aggregate entry, the filtered panel contains approximately \Nfull{} observations across \CountriesFull{} countries, \Industries{} ISIC Revision~4 industries, and \Years{} years. The regression sample, restricted to rows with complete synthetic controls and valid identifiers, contains \Nreg{} observations across \CountriesReg{} countries. The high-income regression subsample contains \Nhi{} observations across \CountriesHi{} countries. Summary moments for key variables appear in Appendix~Table~\ref{tab:desc}; variable definitions for the analysis file appear in Appendix~\ref{app:datadict}.
+
+%=============================================================================
+\section{Analysis}
+%=============================================================================
+
+\subsection{Empirical strategy}
+
+The empirical analysis proceeds in two stages. First, descriptive figures summarize global WITS totals (Figure~\ref{fig:global_ntm}), average new NTMs by income group and relative to high-income countries (Figure~\ref{fig:fig1} and Figure~\ref{fig:fig2}), and a high-income country scatter (Figure~\ref{fig:fig3}). Second, regression models estimate the partial association between log association density and log new NTMs with progressively richer controls and fixed effects. Standard errors are clustered at the country level in all OLS specifications.
+
+\subsection{Regression models}
+
+\textbf{Model 1 (pooled OLS, high income).} The baseline specification regresses log new NTMs on log association density and log synthetic controls, with no fixed effects:
+\begin{equation}
+\ln(1+\mathrm{NTM}_{c,i,t})=\alpha+\beta\ln(1+\mathrm{TA}_{c,i})+\gamma'X_{c,i,t}+\varepsilon_{c,i,t},
+\end{equation}
+where $c$ indexes country, $i$ industry, and $t$ year. This model captures the raw partial correlation controlling for industry size proxies.
+
+\textbf{Model 2 (random effects GLS, high income).} Random effects GLS adds a random country component, estimated using the \texttt{linearmodels} package \citep{sheppardLinearmodels}, as a middle ground between pooled OLS and strict fixed effects.
+
+\textbf{Model 3 (two-way fixed effects, high income; main model).} The preferred OLS specification includes country fixed effects $\alpha_c$ and year fixed effects $\delta_t$:
+\begin{equation}
+\ln(1+\mathrm{NTM}_{c,i,t})=\beta\ln(1+\mathrm{TA}_{c,i})+\gamma'X_{c,i,t}+\alpha_c+\delta_t+\varepsilon_{c,i,t}.
+\end{equation}
+By absorbing time-invariant country differences and common calendar-year shocks, this specification focuses on within-country, within-year variation jointly with the industry-time variation in controls.
+
+\textbf{Model 4 (two-way fixed effects by income group).} The same two-way FE specification is estimated separately for each World Bank income group (Low, Lower-middle, Upper-middle, and High) to assess whether the partial association differs systematically across development levels.
+
+%=============================================================================
+\section{Results}
+%=============================================================================
+
+\subsection{Descriptive trends}
+
+Figure~\ref{fig:fig1} plots the average number of new NTMs per country-industry observation by year for each World Bank income group. Figure~\ref{fig:fig2} compares high-income countries to all others. Together, they show volatile series with higher average intensity in some later years for several groups, motivating flexible transforms and year fixed effects in the regressions.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=\linewidth]{fig1_ntm_by_income_over_time.png}
+  \caption{Average new NTMs per year by World Bank income group (1991 to 2024). Source: WITS; World Bank income classifications.}
+  \label{fig:fig1}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=\linewidth]{fig2_hi_vs_others_ntm.png}
+  \caption{Average new NTMs: high-income countries versus all other countries (1991 to 2024). Source: WITS.}
+  \label{fig:fig2}
+\end{figure}
+
+Figure~\ref{fig:fig3} aggregates to the country level within the high-income sample and plots $\ln(1+\text{average TA})$ against $\ln(1+\text{average new NTMs})$ where both averages are positive, with a positive linear trend overlaid.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.92\linewidth]{fig3_scatter_hi_ta_ntm.png}
+  \caption{Log average trade associations versus log average new NTMs (high-income countries). Sources: World Guide to Trade Associations; WITS.}
+  \label{fig:fig3}
+\end{figure}
+
+\subsection{Main regression results (high income)}
+
+Table~\ref{tab:main} reports estimates for Models~1 to~3 on the high-income subsample ($N=\Nhi{}$). Across specifications, the coefficient on $\ln(1+\mathrm{TA})$ is positive and statistically significant. The pooled OLS estimate is 0.453 ($p<0.001$). The random effects estimate is 0.190 ($p<0.001$). The two-way fixed effects estimate is 0.168 ($p<0.001$).
+
+The decline from pooled OLS toward two-way FE is consistent with a component of the raw correlation reflecting persistent differences across high-income countries that are absorbed by country fixed effects. The statistically significant FE estimate indicates that, within the same high-income country and the same year, industries with higher association density tend to display higher new NTM counts, conditional on synthetic size proxies.
+
+\begin{table}[htbp]
+  \centering
+  \small
+  \setlength{\tabcolsep}{5pt}
+  \caption{Main regression results: trade association density and new NTMs (high-income sample).}
+  \label{tab:main}
+  \begin{tabular}{@{}lrrrr@{}}
+    \toprule
+    Model & $\hat\beta$ & 95\% CI & $p$-value & $N$ \\
+    \midrule
+    Model 1: Pooled OLS & 0.453 & $[0.320,\,0.585]$ & $<0.001$ & 30,270 \\
+    Model 2: Random effects GLS & 0.190 & $[0.139,\,0.241]$ & $<0.001$ & 30,270 \\
+    Model 3: Two-way FE (main) & 0.168 & $[0.108,\,0.228]$ & $<0.001$ & 30,270 \\
+    \bottomrule
+  \end{tabular}
+\begin{tablenotes}
+\noindent\textit{Notes:} Dependent variable is $\ln(1+\text{new NTMs})$. All models include $\ln(1+\cdot)$ synthetic controls (employment, value added, wages, output, establishments). Model~3 includes country and year fixed effects. Confidence intervals use $\pm 1.96\times$ clustered standard errors (country clusters). Coefficients and CIs match \path{regression_results.csv} from the project analysis script (rounded).
+\end{tablenotes}
+\end{table}
+
+Figures~\ref{fig:fig4} through~\ref{fig:fig6} display the estimated coefficient on $\ln(1+\mathrm{TA})$ with 95\% confidence intervals for Models~1 to~3.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.92\linewidth]{fig4_model1_pooled_ols.png}
+  \caption{Model~1 (pooled OLS, high income): coefficient on $\ln(1+\mathrm{TA})$ with 95\% CI.}
+  \label{fig:fig4}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.92\linewidth]{fig5_model2_random_effects.png}
+  \caption{Model~2 (random effects GLS, high income): coefficient on $\ln(1+\mathrm{TA})$ with 95\% CI.}
+  \label{fig:fig5}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.92\linewidth]{fig6_model3_twoway_fe.png}
+  \caption{Model~3 (two-way fixed effects, high income; main result): coefficient on $\ln(1+\mathrm{TA})$ with 95\% CI.}
+  \label{fig:fig6}
+\end{figure}
+
+\subsection{Heterogeneity by income group}
+
+Table~\ref{tab:het} reports the Model~4 two-way FE estimates by income group. The coefficient on $\ln(1+\mathrm{TA})$ is positive in every group. Point estimates range from 0.147 (low income) to 0.202 (upper-middle income), with the high-income estimate (0.168) near the middle of the cross-group range. Confidence intervals overlap substantially, so differences across point estimates should be interpreted cautiously.
+
+\begin{table}[htbp]
+  \centering
+  \small
+  \caption{Two-way fixed effects estimates by World Bank income group (Model~4).}
+  \label{tab:het}
+  \begin{tabular}{@{}lrrrr@{}}
+    \toprule
+    Income group & $\hat\beta$ & 95\% CI & $p$-value & $N$ \\
+    \midrule
+    Low income & 0.147 & $[0.032,\,0.262]$ & 0.012 & 9,427 \\
+    Lower-middle income & 0.178 & $[0.064,\,0.291]$ & 0.002 & 42,045 \\
+    Upper-middle income & 0.202 & $[0.096,\,0.308]$ & $<0.001$ & 41,766 \\
+    High income & 0.168 & $[0.108,\,0.228]$ & $<0.001$ & 30,270 \\
+    \bottomrule
+  \end{tabular}
+\begin{tablenotes}
+\noindent\textit{Notes:} Each row is a separate two-way FE regression with the same control set as Table~\ref{tab:main}. Standard errors clustered at the country level. $N$ is the number of observations in the estimation sample for that income group with complete synthetic controls.
+\end{tablenotes}
+\end{table}
+
+Figure~\ref{fig:fig7} plots the Model~4 coefficients and 95\% confidence intervals side by side.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=\linewidth]{fig7_model4_income_comparison.png}
+  \caption{Model~4: two-way FE estimates of $\ln(1+\mathrm{TA})$ by income group with 95\% CIs.}
+  \label{fig:fig7}
+\end{figure}
+
+%=============================================================================
+\section{Recommendations}
+%=============================================================================
+
+\subsection{Policy and monitoring}
+
+The findings suggest practical lessons for trade policy monitoring \citep{bownPeters2018}. First, NTM dynamics deserve attention alongside tariffs in assessments of trade restrictiveness, because intensive regulatory margins can move even when tariff schedules are stable. Second, because the partial association appears across income groups, political economy mechanisms linked to organized industry may deserve consideration in developing country contexts as well, not only in high-income settings. Third, transparency and disciplines on NTMs, including notification quality and regulatory impact review, can complement traditional tariff work.
+
+\subsection{Limitations}
+
+Several limitations matter for interpretation. Trade association counts are fixed in the cross section (1999), so the panel cannot identify effects of changing association density. The regression sample is restricted by synthetic-control availability (roughly one-third of the filtered panel), which affects which countries and industries appear in the estimates. Potential endogeneity remains: industries that receive more NTMs may also form or maintain more associations, which would bias ordinary least squares coefficients upward absent instruments. Finally, association counts are an imperfect proxy for realized lobbying influence. Recorded NTM counts also reflect notification rules, database coverage, and mid-sample spikes that may combine true policy incidence with measurement change.
+
+\subsection{Future directions}
+
+Natural extensions include tracking associations over time if longitudinal data become available; incorporating import penetration and demand elasticities to move closer to structural tests in the spirit of \citet{grossmanHelpman1994} and related work such as \citet{mitraEtAl2002}; estimating models for specific NTM chapters (especially Types~A and~B); and using instrumental variables to tighten causal interpretation.
+
+%=============================================================================
+\section{Conclusion}
+%=============================================================================
+
+The results indicate a robust partial association between trade association density and new NTM intensity in the high-income subsample across pooled OLS, random effects, and two-way fixed effects. The preferred two-way FE coefficient (0.168, $p<0.001$) implies an elasticity-style interpretation under the $\ln(1+\cdot)$ specification: within the same high-income country and year, a one percent increase in association density is associated with roughly a 0.168 percent increase in new NTMs, conditional on synthetic industry controls and year shocks.
+
+The same sign appears in separate two-way FE models for each World Bank income group (Table~\ref{tab:het}), which weighs against interpreting the high-income finding as a purely mechanical artifact of income level alone. At the same time, the analysis is observational: association counts are not longitudinal in this project, and causal claims require stronger identification than provided here. For the World Bank's trade policy mission, the contribution is a transparent, reproducible panel benchmark that aligns with Protection for Sale logic while flagging where deeper mechanism work is needed.
+
+%=============================================================================
+\newpage
+\appendix
+\section{Descriptive statistics}
+
+\begin{table}[htbp]
+  \centering
+  \small
+  \caption{Descriptive statistics for key variables (aligned with \texttt{final\_report\_v3}).}
+  \label{tab:desc}
+  \begin{tabular}{@{}lrrrrr@{}}
+    \toprule
+    Variable & Mean & Std.\ Dev.\ & Min & Max & $N$ \\
+    \midrule
+    \texttt{new\_ntm\_count} & 621.0 & 2{,}841.3 & 0 & 98{,}750 & 337{,}542 \\
+    \texttt{trade\_association\_count} & 0.83 & 3.21 & 0 & 42 & 337{,}542 \\
+    $\ln(1+\text{new NTMs})$ & 1.82 & 2.81 & 0 & 11.50 & 337{,}542 \\
+    $\ln(1+\text{TA})$ & 0.34 & 0.71 & 0 & 3.76 & 337{,}542 \\
+    $\ln(1+\texttt{emp\_synth})$ & 9.14 & 2.43 & 0 & 14.82 & 123{,}508 \\
+    $\ln(1+\texttt{va\_synth})$ & 11.23 & 2.87 & 0 & 18.41 & 123{,}508 \\
+    $\ln(1+\texttt{wages\_synth})$ & 10.98 & 2.91 & 0 & 17.93 & 123{,}508 \\
+    $\ln(1+\texttt{output\_synth})$ & 11.87 & 2.96 & 0 & 19.12 & 123{,}508 \\
+    $\ln(1+\texttt{estab\_synth})$ & 6.43 & 2.18 & 0 & 12.87 & 123{,}508 \\
+    \bottomrule
+  \end{tabular}
+\begin{tablenotes}
+\noindent\textit{Notes:} Means and standard deviations for transformed variables are computed on the stated $N$; the regression sample uses rows with complete synthetic controls. The pooled regression sample contains \Nreg{} observations across \CountriesReg{} countries; income-group counts of observations match Table~\ref{tab:het}.
+\end{tablenotes}
+\end{table}
+
+\section{Data dictionary}
+\phantomsection\label{app:datadict}
+\begingroup
+\footnotesize
+\setlength{\parskip}{0.55em}
+\setlength{\parindent}{0pt}
+\raggedright
+
+\noindent
+This dictionary defines all variables contained in the analysis dataset \path{panel_data_final.csv}.
+Each entry corresponds to a column in the dataset and describes its content, source, and role in
+the analysis. Variables are grouped loosely by function: identifiers used to structure the panel,
+outcome and regressor variables used in the regression models, control variables derived from
+industry-level economic data, and derived variables created during data preparation.
+
+\medskip
+
+\noindent\textbf{\texttt{ISO\_A3} / \texttt{iso3}:}
+Three-letter International Organization for Standardization (ISO) 3166-1 alpha-3 country code, stored in upper and lower case for merges with different upstream files. Standard errors are clustered at \texttt{ISO\_A3}.
+
+\noindent\textbf{\texttt{year}:}
+Calendar year of the observation, 1991 to 2024 in the filtered extract. Year fixed effects are absorbed in all regression models.
+
+\noindent\textbf{\texttt{isic\_rev4}:}
+Numeric International Standard Industrial Classification (ISIC) Revision~4 industry code for the country, year, and industry cell.
+
+\noindent\textbf{\texttt{Activity}:}
+Text label describing the industry activity corresponding to the \texttt{isic\_rev4} code. Used for documentation only.
+
+\noindent\textbf{\texttt{NAM\_0}:}
+Full country name string. Used for documentation only.
+
+\noindent\textbf{\texttt{income\_group}:}
+World Bank income classification for that country and year. Values are L (Low Income), LM (Lower-Middle Income), UM (Upper-Middle Income), or H (High Income), based on Gross National Income (GNI) per capita thresholds defined annually by the World Bank.
+
+\noindent\textbf{\texttt{WB\_region}:}
+World Bank regional code grouping countries into geographic regions such as South Asia (SAR), East Asia and Pacific (EAP), Europe and Central Asia (ECA), Latin America and the Caribbean (LCR), Middle East and North Africa (MENA), North America (NAM), and Sub-Saharan Africa (AFR).
+
+\noindent\textbf{\texttt{polity2}:}
+Polity5 composite governance score ranging from $-10$ (strongly autocratic) to $+10$ (strongly democratic). Special codes ($-66$ indicating foreign interruption, $-77$ indicating anarchy or interregnum, and $-88$ indicating regime transition) are treated as missing in the analysis.
+
+\noindent\textbf{\texttt{polity2\_clean}:}
+Derived variable. \texttt{polity2} restricted to the valid substantive range ($-10$ to $+10$) by replacing special codes with missing values, for use in tables and regime indicators.
+
+\noindent\textbf{\texttt{regime}:}
+Derived variable. Binary democracy versus autocracy indicator based on \texttt{polity2\_clean}, where values above zero are classified as Democracy and values zero or below are classified as Autocracy. Missing where \texttt{polity2\_clean} is missing.
+
+\noindent\textbf{\texttt{new\_ntm\_count}:}
+Main outcome variable. Count of new non-tariff measures (NTMs) introduced in a given country, industry, and year, drawn from the World Integrated Trade Solution (WITS) database maintained jointly by the World Bank and the United Nations Conference on Trade and Development (UNCTAD).
+
+\noindent\textbf{\texttt{cumulative\_ntm\_count}:}
+Cumulative count of non-tariff measures (NTMs) recorded up to and including that year for the country-industry cell. Used for descriptive analysis and robustness checks.
+
+\noindent\textbf{\texttt{countA} through \texttt{countP}:}
+Counts of non-tariff measures (NTMs) disaggregated by WITS chapter following the United Nations Conference on Trade and Development (UNCTAD) NTM taxonomy. Chapters include Type A (Sanitary and Phytosanitary measures), Type B (Technical Barriers to Trade), Type C (Pre-shipment Inspection), Type D (Contingent Trade-Protective measures), Type E (Non-automatic Licensing and Quotas), Type F (Price-Control measures), Type G (Finance measures), Type H (measures Affecting Competition), Type I (Trade-Related Investment measures), Type J (Distribution Restrictions), Type L (Subsidies), Type M (Government Procurement Restrictions), Type N (Intellectual Property measures), and Type P (Export-Related measures). Available for future disaggregated analysis.
+
+\noindent\textbf{\texttt{trade\_association\_count}:}
+Main explanatory variable. Number of trade associations operating in the country-industry, drawn from the digitized World Guide to Trade Associations (Zils 1999). Because the source is a single cross-sectional inventory, the count is repeated across all years in the panel for a given country-industry pair.
+
+\noindent\textbf{\texttt{emp\_synth}, \texttt{va\_synth}, \texttt{wages\_synth}, \texttt{output\_synth}, \texttt{estab\_synth}:}
+Synthetic control variables derived from the United Nations Industrial Development Organization (UNIDO) Industrial Statistics (INDSTAT) database, representing employment, value added, wages and salaries, gross output, and number of establishments respectively. Synthetic values are imputed to fill gaps in raw INDSTAT coverage. All five must be non-missing for an observation to enter the regression sample.
+
+\noindent\textbf{\texttt{ln\_new\_ntm}, \texttt{ln\_cum\_ntm}, \texttt{ln\_ta}:}
+Log-transformed versions of the main outcome and regressor variables. Computed as the natural log of one plus the corresponding count (\texttt{log1p}) to accommodate zero values while preserving the full sample.
+
+\noindent\textbf{\texttt{ln\_emp\_s}, \texttt{ln\_va\_s}, \texttt{ln\_wages\_s}, \texttt{ln\_output\_s}, \texttt{ln\_estab\_s}:}
+Natural log of one plus (\texttt{log1p}) transforms of the five synthetic control variables representing employment, value added, wages, output, and establishments. These five variables constitute the full control vector included in every regression model.
+
+\noindent\textbf{\texttt{country\_fe}, \texttt{year\_fe}:}
+Integer category codes for country and year used to implement two-way fixed effects in \texttt{statsmodels}. Both variables are re-encoded from zero after each subsample restriction so that codes remain contiguous within the estimation sample, avoiding numerical instability from large sparse dummy matrices.
+
+\vspace{0.35em}
+\noindent\textit{Implementation note.} The authoritative flat file is \path{panel_data_final.csv}. The analysis script (\path{analysis.py}) reads this file, applies all filters and transformations, and writes all tables and figures used in the report.
+
+\endgroup
+
+%=============================================================================
+\newpage
+\section*{References}
+\addcontentsline{toc}{section}{References}
+\singlespacing
+\setlength{\bibhang}{0.5in}
+
+\begin{thebibliography}{99}
+
+\bibitem[{Bown and Peters(2018)}]{bownPeters2018}
+Bown, C.~P., \& Peters, R. (2018).
+\newblock The unseen impact of non-tariff measures: Insights from a new database.
+\newblock United Nations Conference on Trade and Development.
+
+\bibitem[{Grossman and Helpman(1994)}]{grossmanHelpman1994}
+Grossman, G.~M., \& Helpman, E. (1994).
+\newblock Protection for sale.
+\newblock \emph{American Economic Review}, 84(4), 833--850.
+
+\bibitem[{Marshall et~al.(2019)}]{marshall2019}
+Marshall, M.~G., Gurr, T.~R., \& Jaggers, K. (2019).
+\newblock \emph{Polity5: Political regime characteristics and transitions, 1800--2018}.
+\newblock Center for Systemic Peace.
+
+\bibitem[{Mitra et~al.(2002)}]{mitraEtAl2002}
+Mitra, D., Thomakos, D.~D., \& Uluba\c{s}o\u{g}lu, M.~A. (2002).
+\newblock ``Protection for sale'' in a developing country: Democracy vs.\ dictatorship.
+\newblock \emph{Economica}.
+\newblock \url{https://doi.org/10.1111/1468-0335.t01-1-00238}
+
+\bibitem[{Sheppard(2024)}]{sheppardLinearmodels}
+Sheppard, K. (2024).
+\newblock \emph{linearmodels: Linear Panel, Instrumental Variable, Asset Pricing, and System Regression models for Python} (Python package).
+\newblock \url{https://github.com/bashtage/linearmodels}
+
+\bibitem[{UNIDO(2024)}]{unido2024}
+United Nations Industrial Development Organization. (2024).
+\newblock INDSTAT industrial statistics database.
+\newblock \url{https://www.unido.org/}
+
+\bibitem[{World Bank(2024)}]{wb2024}
+World Bank. (2024).
+\newblock World Bank country and lending groups.
+\newblock World Bank Open Data.
+\newblock \url{https://datahelpdesk.worldbank.org/}
+
+\bibitem[{World Bank and UNCTAD(2024)}]{wits2024}
+World Bank \& UNCTAD. (2024).
+\newblock World Integrated Trade Solution (WITS) non-tariff measures database.
+\newblock World Bank Group.
+\newblock \url{https://wits.worldbank.org/}
+
+\bibitem[{Zils(1999)}]{zils1999}
+Zils, M. (1999).
+\newblock \emph{World guide to trade associations} (5th ed.).
+\newblock K.~G. Saur. Digitized extract: Kansas Data Science Consortium.
+
+\end{thebibliography}
+
+\end{document}
